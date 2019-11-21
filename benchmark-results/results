@@ -1,0 +1,114 @@
+import numpy as np
+import example
+a = np.random.randn(1000).astype(np.float32)
+a.min()
+example.numpy_max(a)
+a.max()
+%timeit example.numpy_max(a)
+%timeit a.max()
+
+
+10 297 ns ± 1.62 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+100 302 ns ± 0.347 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+1000 414 ns ± 0.489 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+10000 1.6 µs ± 2.91 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+100000 5.27 µs ± 53 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
+1000000 50.4 µs ± 19.3 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+10000000 1.68 ms ± 148 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
+100000000 20.7 ms ± 629 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+500000000 107 ms ± 4.14 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+                                                                               
+10 1.58 µs ± 7.7 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+100 1.6 µs ± 12.8 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+1000 1.91 µs ± 13.6 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+10000 4.34 µs ± 10.4 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
+100000 25.2 µs ± 231 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+1000000 228 µs ± 2.51 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
+10000000 2.64 ms ± 25.6 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+100000000 25.8 ms ± 55.7 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+500000000 129 ms ± 1.35 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+
+import numpy as np
+import example
+
+for N in (10, 100, 1000, 10000, 100000, 1000000, 3000000, 10000000, 100000000, 500000000):
+    print(f"{N} ", end='')
+    a = np.random.randn(N).astype(np.float32)
+    #%timeit a.sum()
+    %timeit example.numpy_sum(a)
+
+
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
+
+N = np.array([10, 100, 1000, 10000, 100000, 1000000, 3000000, 10000000, 100000000, 500000000])
+
+np_l_t = np.array([1.58e-6, 1.6e-6, 1.91e-6, 4.34e-6, 25.2e-6, 228e-6, 690e-6, 2.63e-3, 25.8e-3, 129e-3])
+
+pb_l_t = np.array([297e-9, 302e-9, 414e-9, 1.4e-6, 5.27e-6, 50.4e-6, 353e-6, 1.68e-3, 20.7e-3, 96e-3])
+
+pb_d_t = np.array([333e-9, 356e-9, 451e-9, 1.4e-6, 3.97e-6, 20e-6, 55.3e-6, 1.13e-3, 11.7e-3, 58.9e-3])
+
+np_d_t = np.array([1.58e-6, 1.6e-6, 1.98e-6, 5.01e-6, 35.2e-6, 314e-6, 912e-6, 3.32e-3, 33.3e-3, 167e-3])
+
+# desktop
+
+np_d_rate = (N - 1) / np_d_t
+pb_d_rate = (N - 1) / pb_d_t
+plt.plot(N, np_d_rate, linewidth=1, color='red', alpha=0.7, linestyle=":")
+plt.plot(N, pb_d_rate, linewidth=1, color='red', alpha=0.7)
+plt.scatter(N, pb_d_rate, s=8, color='red', label='desktop, hand-optimized')
+plt.scatter(N, np_d_rate, s=8, color='red', alpha=0.7, marker='o', facecolors='none', label='desktop, NumPy (OpenBLAS)')
+
+# laptop
+
+np_l_rate = (N - 1) / np_l_t
+pb_l_rate = (N - 1) / pb_l_t
+plt.plot(N, np_l_rate, linewidth=1, alpha=0.6, color='blue', linestyle=":")
+plt.plot(N, pb_l_rate, linewidth=1, alpha=0.6, color='blue')
+plt.scatter(N, pb_l_rate, s=8, color='blue', label='laptop hand-optimized')
+plt.scatter(N, np_l_rate, s=8, color='blue', alpha=0.7, marker='o', facecolors='none', label='laptop, NumPy (OpenBLAS)')
+
+plt.xscale('log')
+plt.yscale('log')
+plt.xlim(5, 1e9)
+plt.ylim(1e6, 1e11)
+plt.xticks([10, 1000, 100000, 10000000, 1e9], ['10', '$10^3$', '$10^5$', '$10^7$', '$10^9$'])    
+plt.yticks([1e6, 1e7, 1e8, 1e9, 1e10, 1e11], ['0.001', '0.01', '0.1', '1', '10', '100'])
+plt.xlabel("Array Size")
+plt.ylabel("Compute Speed (billions of additions per second)")
+plt.axvline(2e6, c='k', linestyle=':', linewidth=1, alpha=0.33)
+plt.axvline(5e6, c='k', linestyle=':', alpha=0.33, linewidth=1)
+
+plt.annotate('Laptop cache\n    capacity',
+            xy=(2.01e6, 5e8), xycoords='data',
+            xytext=(-100, -20), textcoords='offset points',
+            size=10,
+            color='white',
+            bbox=dict(boxstyle="round4,pad=.5", fc="blue", alpha=0.66),
+            arrowprops=dict(arrowstyle="->", connectionstyle="angle3,angleA=60,angleB=-5"))
+
+plt.annotate('Desktop cache\n     capacity',
+            xy=(4.99e6, 1e8), xycoords='data',
+            xytext=(35, -25), textcoords='offset points',
+            size=10,
+            color='white',
+            bbox=dict(boxstyle="round4,pad=.5", fc="red", alpha=0.66),
+            arrowprops=dict(arrowstyle="->", connectionstyle="angle3,angleA=130,angleB=170"))
+
+desktop = mpatches.Patch(color='red', alpha=0.66, label='Desktop')
+laptop = mpatches.Patch(color='blue', alpha=0.66, label='Laptop')
+numpy = mlines.Line2D([], [], color='k', marker='o', linestyle=':', linewidth=1,fillstyle='none', markersize=4, label='NumPy (OpenBLAS)')
+hand_optimized = mlines.Line2D([], [], color='k', marker='o', linewidth=1, markersize=4, label='hand-optimized')
+plt.legend(handles=[desktop, laptop, hand_optimized, numpy])
+
+
+
+Desktop:
+
+i7-6900K (Broadwell) 3.2 GHz - 3.7, 20 MB L3 cache, 8 cores, DDR4 2400
+
+Laptop:
+
+i7-8650U (Kaby Lake) 4.2 GHz Max Turbo, 8 MB L3 Cache, 4 cores LPDDR3-2133
