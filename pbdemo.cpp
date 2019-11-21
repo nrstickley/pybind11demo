@@ -16,7 +16,11 @@ int add(int i, int j) {
 }
 
 
-/** Passing a NumPy array as an argument */
+/** Passing a NumPy array as an argument and returning a float.
+ *  This is the straightforward single-threaded version of the function
+ *  with the attribute hot added to help the compiler. Notice that the 
+ *  sum is accumulated in a 32-bit float, so some precision is lost.
+*/
 __attribute__ ((hot)) float numpy_sum_st(const py::array_t<float, py::array::c_style> &array)
 {
     float sum = 0.0;
@@ -35,7 +39,7 @@ __attribute__ ((hot)) float numpy_sum_st(const py::array_t<float, py::array::c_s
 }
 
 
-/** Passing a NumPy array as an argument */
+/** The same as above, but now explicitly using AVX2, but not handling edge cases.*/
 __attribute__ ((hot)) float numpy_sum_avx(const py::array_t<float, py::array::c_style> &array)
 {
     __m256 sum = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -55,11 +59,12 @@ __attribute__ ((hot)) float numpy_sum_avx(const py::array_t<float, py::array::c_
 
     val.vector = sum;
 
-    return val.array[0] + val.array[1] + val.array[2] + val.array[3] + val.array[4] + val.array[5] + val.array[6] + val.array[7];
+    return val.array[0] + val.array[1] + val.array[2] + val.array[3] 
+         + val.array[4] + val.array[5] + val.array[6] + val.array[7];
 }
 
 
-/** Passing a NumPy array as an argument */
+/** Similar to the cases above, but now using multithreading. */
 float numpy_sum_mt(const py::array_t<float, py::array::c_style> &array)
 {
     float sum = 0.0;
@@ -68,7 +73,7 @@ float numpy_sum_mt(const py::array_t<float, py::array::c_style> &array)
 
     const unsigned int size = array.size();
 
-#pragma omp parallel for reduction(+ : sum) schedule(static) num_threads(8)
+    #pragma omp parallel for reduction(+ : sum) schedule(static) num_threads(8)
     for (unsigned int i=0; i < size; ++i)
     {
         sum += data[i];
@@ -77,7 +82,9 @@ float numpy_sum_mt(const py::array_t<float, py::array::c_style> &array)
     return sum;
 }
 
-
+/** This is the fuction that I will actually wrap. It's adaptive, calling the single-threaded
+ *  version of the sum function for short arrays and the OpenMP version for larger arrays. 
+*/
 float numpy_sum(const py::array_t<float, py::array::c_style> &array)
 {
     const unsigned int size = array.size();
@@ -97,7 +104,7 @@ float numpy_sum(const py::array_t<float, py::array::c_style> &array)
 }
 
 
-/** Passing a NumPy array as an argument */
+/** Similar to the sum function above, but now finding the maximum value of an array*/
 float numpy_max(py::array_t<float, py::array::c_style> &array)
 {
     float max = -INFINITY;
@@ -117,11 +124,11 @@ float numpy_max(py::array_t<float, py::array::c_style> &array)
 }
 
 
-/** An example class */
+/** An example class containing public and protected data and a public enumeration */
 class Pet
 {
 public:
-    enum Class {Mammal =0 , Reptile, Bird, Fish, Arachnid, Insect};
+    enum Class {Mammal = 0 , Reptile, Bird, Fish, Arachnid, Insect};
 
     Pet(const std::string &name) : name(name) { }
 
